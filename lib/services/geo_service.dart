@@ -101,16 +101,15 @@ class GeoService {
             if (services?['b2b'] != true) continue;
           }
 
-          results.add({
-            ...est,
-            'distance_km': distance,
-          });
+          results.add({...est, 'distance_km': distance});
         }
       }
 
       // Ordenar por distância
-      results.sort((a, b) =>
-          (a['distance_km'] as double).compareTo(b['distance_km'] as double));
+      results.sort(
+        (a, b) =>
+            (a['distance_km'] as double).compareTo(b['distance_km'] as double),
+      );
 
       return results;
     } catch (e) {

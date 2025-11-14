@@ -11,22 +11,22 @@ import 'package:cached_network_image/cached_network_image.dart';
 // Provider para posts
 final postsProvider = StreamProvider<List<Post>>((ref) async* {
   final client = SupabaseClientService.client;
-  
+
   // Stream inicial
   final initial = await client
       .from('posts')
       .select()
       .order('created_at', ascending: false)
       .limit(20);
-  
+
   yield (initial as List).map((p) => Post.fromJson(p)).toList();
-  
+
   // Realtime subscription
   final stream = client
       .from('posts')
       .stream(primaryKey: ['id'])
       .order('created_at', ascending: false);
-  
+
   await for (final data in stream) {
     if (data.isNotEmpty) {
       yield data.map((p) => Post.fromJson(p)).toList();
@@ -141,7 +141,8 @@ class FeedScreen extends ConsumerWidget {
                           final bytes = await image.readAsBytes();
                           setState(() {
                             selectedImage = bytes;
-                            imagePath = 'posts/${DateTime.now().millisecondsSinceEpoch}.jpg';
+                            imagePath =
+                                'posts/${DateTime.now().millisecondsSinceEpoch}.jpg';
                           });
                         }
                       },
@@ -155,9 +156,7 @@ class FeedScreen extends ConsumerWidget {
                   onPressed: () async {
                     if (contentController.text.trim().isEmpty &&
                         selectedImage == null) {
-                      Fluttertoast.showToast(
-                        msg: 'Adicione texto ou imagem',
-                      );
+                      Fluttertoast.showToast(msg: 'Adicione texto ou imagem');
                       return;
                     }
 
@@ -212,22 +211,21 @@ class PostCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (post.content != null) ...[
-              Text(
-                post.content!,
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
+              Text(post.content!, style: Theme.of(context).textTheme.bodyLarge),
               const SizedBox(height: 12),
             ],
             if (post.images != null && post.images!.isNotEmpty)
-              ...post.images!.map((img) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: CachedNetworkImage(
-                      imageUrl: img,
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      height: 200,
-                    ),
-                  )),
+              ...post.images!.map(
+                (img) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: CachedNetworkImage(
+                    imageUrl: img,
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    height: 200,
+                  ),
+                ),
+              ),
             const SizedBox(height: 12),
             Row(
               children: [

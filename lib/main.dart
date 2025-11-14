@@ -146,8 +146,9 @@ class _EstablishmentProfileWrapper extends StatelessWidget {
             return const Center(child: Text('Estabelecimento não encontrado'));
           }
 
-          final establishment =
-              Establishment.fromJson(snapshot.data as Map<String, dynamic>);
+          final establishment = Establishment.fromJson(
+            snapshot.data as Map<String, dynamic>,
+          );
           return EstablishmentProfileScreen(establishment: establishment);
         },
       ),

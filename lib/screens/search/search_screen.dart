@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../models/establishment.dart';
 import '../../services/geo_service.dart';
 import '../../services/supabase_client.dart';
@@ -7,9 +8,12 @@ import '../../widgets/establishment_card/establishment_card.dart';
 import '../../providers/auth/auth_provider.dart';
 
 // Provider para busca de estabelecimentos
-final searchProvider = StateNotifierProvider<SearchNotifier, AsyncValue<List<Establishment>>>((ref) {
-  return SearchNotifier(ref);
-});
+final searchProvider =
+    StateNotifierProvider<SearchNotifier, AsyncValue<List<Establishment>>>((
+      ref,
+    ) {
+      return SearchNotifier(ref);
+    });
 
 class SearchNotifier extends StateNotifier<AsyncValue<List<Establishment>>> {
   final Ref ref;
@@ -55,11 +59,19 @@ class SearchNotifier extends StateNotifier<AsyncValue<List<Establishment>>> {
           );
         } else {
           // Fallback: busca sem geo
-          results = await _searchWithoutGeo(query: query, type: type, b2bOnly: b2bOnly);
+          results = await _searchWithoutGeo(
+            query: query,
+            type: type,
+            b2bOnly: b2bOnly,
+          );
         }
       } else {
         // Busca sem geolocalização
-        results = await _searchWithoutGeo(query: query, type: type, b2bOnly: b2bOnly);
+        results = await _searchWithoutGeo(
+          query: query,
+          type: type,
+          b2bOnly: b2bOnly,
+        );
       }
 
       final establishments = results
@@ -77,7 +89,9 @@ class SearchNotifier extends StateNotifier<AsyncValue<List<Establishment>>> {
     String? type,
     bool? b2bOnly,
   }) async {
-    var queryBuilder = SupabaseClientService.client.from('establishments').select();
+    var queryBuilder = SupabaseClientService.client
+        .from('establishments')
+        .select();
 
     if (query != null && query.isNotEmpty) {
       queryBuilder = queryBuilder.ilike('name', '%$query%');
@@ -129,7 +143,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 
   void _performSearch() {
-    ref.read(searchProvider.notifier).search(
+    ref
+        .read(searchProvider.notifier)
+        .search(
           query: _searchController.text.trim().isEmpty
               ? null
               : _searchController.text.trim(),
@@ -146,9 +162,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final isPartner = auth.value?.role == 'partner';
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Buscar'),
-      ),
+      appBar: AppBar(title: const Text('Buscar')),
       body: Column(
         children: [
           // Barra de busca e filtros
@@ -185,11 +199,17 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       hint: const Text('Tipo'),
                       items: const [
                         DropdownMenuItem(value: null, child: Text('Todos')),
-                        DropdownMenuItem(value: 'restaurant', child: Text('Restaurante')),
+                        DropdownMenuItem(
+                          value: 'restaurant',
+                          child: Text('Restaurante'),
+                        ),
                         DropdownMenuItem(value: 'bar', child: Text('Bar')),
                         DropdownMenuItem(value: 'hotel', child: Text('Hotel')),
                         DropdownMenuItem(value: 'event', child: Text('Evento')),
-                        DropdownMenuItem(value: 'supplier', child: Text('Fornecedor')),
+                        DropdownMenuItem(
+                          value: 'supplier',
+                          child: Text('Fornecedor'),
+                        ),
                       ],
                       onChanged: (value) {
                         setState(() => _selectedType = value);
@@ -240,7 +260,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       establishment: est,
                       distanceKm: distance,
                       onTap: () {
-                        // TODO: Navegar para perfil do estabelecimento
+                        context.push('/establishment/${est.id}', extra: est);
                       },
                     );
                   },

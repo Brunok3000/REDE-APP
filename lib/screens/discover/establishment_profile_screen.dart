@@ -4,28 +4,27 @@ import 'package:fluttertoast/fluttertoast.dart';
 import '../../models/establishment.dart';
 import '../../services/supabase_client.dart';
 import '../../providers/cart/cart_provider.dart';
+import 'services_tabs.dart';
 
 // Provider para menu items
 final menuItemsProvider =
-    FutureProvider.family<List<Map<String, dynamic>>, String>(
-  (ref, establishmentId) async {
-    final client = SupabaseClientService.client;
-    final results = await client
-        .from('menu_items')
-        .select()
-        .eq('establishment_id', establishmentId)
-        .eq('available', true);
-    return List<Map<String, dynamic>>.from(results);
-  },
-);
+    FutureProvider.family<List<Map<String, dynamic>>, String>((
+      ref,
+      establishmentId,
+    ) async {
+      final client = SupabaseClientService.client;
+      final results = await client
+          .from('menu_items')
+          .select()
+          .eq('establishment_id', establishmentId)
+          .eq('available', true);
+      return List<Map<String, dynamic>>.from(results);
+    });
 
 class EstablishmentProfileScreen extends ConsumerStatefulWidget {
   final Establishment establishment;
 
-  const EstablishmentProfileScreen({
-    super.key,
-    required this.establishment,
-  });
+  const EstablishmentProfileScreen({super.key, required this.establishment});
 
   @override
   ConsumerState<EstablishmentProfileScreen> createState() =>
@@ -33,38 +32,36 @@ class EstablishmentProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _EstablishmentProfileScreenState
-    extends ConsumerState<EstablishmentProfileScreen> {
+    extends ConsumerState<EstablishmentProfileScreen>
+    with TickerProviderStateMixin {
   late PageController _pageController;
+  late TabController _mainTabController;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController();
+    _mainTabController = TabController(length: 2, vsync: this);
   }
 
   @override
   void dispose() {
     _pageController.dispose();
+    _mainTabController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final menuAsync = ref.watch(menuItemsProvider(widget.establishment.id));
-    final cart = ref.watch(cartProvider);
-    final cartTotal = ref.read(cartProvider.notifier).total;
-
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.establishment.name),
-        elevation: 0,
-      ),
+      appBar: AppBar(title: Text(widget.establishment.name), elevation: 0),
       body: Column(
         children: [
           // Galeria de fotos
           SizedBox(
             height: 250,
-            child: widget.establishment.photos != null &&
+            child:
+                widget.establishment.photos != null &&
                     widget.establishment.photos!.isNotEmpty
                 ? PageView.builder(
                     controller: _pageController,
@@ -109,9 +106,7 @@ class _EstablishmentProfileScreenState
                 ),
                 const SizedBox(height: 8),
                 if (widget.establishment.type != null)
-                  Chip(
-                    label: Text(widget.establishment.type!),
-                  ),
+                  Chip(label: Text(widget.establishment.type!)),
                 const SizedBox(height: 16),
                 if (widget.establishment.addressJson != null)
                   Row(
@@ -129,42 +124,28 @@ class _EstablishmentProfileScreenState
               ],
             ),
           ),
-          // Menu
+          // TabBar para Delivery e Serviços
+          TabBar(
+            controller: _mainTabController,
+            tabs: const [
+              Tab(text: 'Delivery', icon: Icon(Icons.restaurant)),
+              Tab(text: 'Serviços', icon: Icon(Icons.calendar_today)),
+            ],
+          ),
+          // Conteúdo com Delivery vs Serviços
           Expanded(
-            child: menuAsync.when(
-              data: (items) {
-                if (items.isEmpty) {
-                  return const Center(child: Text('Nenhum item disponível'));
-                }
-                return ListView.builder(
-                  itemCount: items.length,
-                  itemBuilder: (context, index) {
-                    final item = items[index];
-                    return _MenuItem(
-                      item: item,
-                      establishmentId: widget.establishment.id,
-                    );
-                  },
-                );
-              },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (err, stack) => Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text('Erro: $err'),
-                    ElevatedButton(
-                      onPressed: () =>
-                          ref.invalidate(menuItemsProvider(widget.establishment.id)),
-                      child: const Text('Tentar novamente'),
-                    ),
-                  ],
-                ),
-              ),
+            child: TabBarView(
+              controller: _mainTabController,
+              children: [
+                // Aba 1: Delivery (Menu + Cart)
+                _DeliveryTab(establishmentId: widget.establishment.id),
+                // Aba 2: Serviços (Reserva + Ingressos + Hospedagem)
+                _ServicesTab(establishmentId: widget.establishment.id),
+              ],
             ),
           ),
-          // Cart footer
-          if (cart.isNotEmpty)
+          // Cart footer (apenas na aba Delivery)
+          if (ref.watch(cartProvider).isNotEmpty)
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -183,15 +164,14 @@ class _EstablishmentProfileScreenState
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '${cart.length} itens',
+                        '${ref.watch(cartProvider).length} itens',
                         style: const TextStyle(color: Colors.white),
                       ),
                       Text(
-                        'R\$ ${cartTotal.toStringAsFixed(2)}',
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleMedium
-                            ?.copyWith(color: Colors.white),
+                        'R\$ ${ref.read(cartProvider.notifier).total.toStringAsFixed(2)}',
+                        style: Theme.of(
+                          context,
+                        ).textTheme.titleMedium?.copyWith(color: Colors.white),
                       ),
                     ],
                   ),
@@ -214,9 +194,103 @@ class _EstablishmentProfileScreenState
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (context) => CheckoutModal(
-        establishment: widget.establishment,
+      builder: (context) => CheckoutModal(establishment: widget.establishment),
+    );
+  }
+}
+
+// Widget para aba Delivery
+class _DeliveryTab extends ConsumerWidget {
+  final String establishmentId;
+
+  const _DeliveryTab({required this.establishmentId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final menuAsync = ref.watch(menuItemsProvider(establishmentId));
+
+    return menuAsync.when(
+      data: (items) {
+        if (items.isEmpty) {
+          return const Center(child: Text('Nenhum item disponível'));
+        }
+        return ListView.builder(
+          itemCount: items.length,
+          itemBuilder: (context, index) {
+            final item = items[index];
+            return _MenuItem(
+              item: item,
+              establishmentId: establishmentId,
+            );
+          },
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (err, stack) => Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('Erro: $err'),
+            ElevatedButton(
+              onPressed: () => ref.invalidate(menuItemsProvider(establishmentId)),
+              child: const Text('Tentar novamente'),
+            ),
+          ],
+        ),
       ),
+    );
+  }
+}
+
+// Widget para aba Serviços
+class _ServicesTab extends ConsumerStatefulWidget {
+  final String establishmentId;
+
+  const _ServicesTab({required this.establishmentId});
+
+  @override
+  ConsumerState<_ServicesTab> createState() => _ServicesTabState();
+}
+
+class _ServicesTabState extends ConsumerState<_ServicesTab>
+    with TickerProviderStateMixin {
+  late TabController _servicesTabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _servicesTabController = TabController(length: 3, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _servicesTabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        TabBar(
+          controller: _servicesTabController,
+          tabs: const [
+            Tab(text: 'Reserva', icon: Icon(Icons.calendar_today)),
+            Tab(text: 'Ingressos', icon: Icon(Icons.event_seat)),
+            Tab(text: 'Hospedagem', icon: Icon(Icons.hotel)),
+          ],
+        ),
+        Expanded(
+          child: TabBarView(
+            controller: _servicesTabController,
+            children: [
+              ReservaTab(establishmentId: widget.establishmentId),
+              IngressosTab(establishmentId: widget.establishmentId),
+              HospedagemTab(establishmentId: widget.establishmentId),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -225,10 +299,7 @@ class _MenuItem extends ConsumerWidget {
   final Map<String, dynamic> item;
   final String establishmentId;
 
-  const _MenuItem({
-    required this.item,
-    required this.establishmentId,
-  });
+  const _MenuItem({required this.item, required this.establishmentId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -253,8 +324,7 @@ class _MenuItem extends ConsumerWidget {
                   width: 80,
                   height: 80,
                   fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) =>
-                      const SizedBox(
+                  errorBuilder: (context, error, stackTrace) => const SizedBox(
                     width: 80,
                     height: 80,
                     child: Icon(Icons.image_not_supported),
@@ -274,10 +344,7 @@ class _MenuItem extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    name,
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
+                  Text(name, style: Theme.of(context).textTheme.titleSmall),
                   if (description != null && description.isNotEmpty)
                     Text(
                       description,
@@ -292,9 +359,9 @@ class _MenuItem extends ConsumerWidget {
                       Text(
                         'R\$ ${price.toStringAsFixed(2)}',
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              color: Colors.green,
-                              fontWeight: FontWeight.bold,
-                            ),
+                          color: Colors.green,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       ElevatedButton(
                         onPressed: () => _addToCart(ref, id, name, price),
@@ -311,12 +378,7 @@ class _MenuItem extends ConsumerWidget {
     );
   }
 
-  void _addToCart(
-    WidgetRef ref,
-    String itemId,
-    String name,
-    double price,
-  ) {
+  void _addToCart(WidgetRef ref, String itemId, String name, double price) {
     final cartNotifier = ref.read(cartProvider.notifier);
     final item = CartItem(
       id: itemId,
@@ -388,16 +450,12 @@ class CheckoutModal extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Total',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
+                Text('Total', style: Theme.of(context).textTheme.titleMedium),
                 Text(
                   'R\$ ${cartTotal.toStringAsFixed(2)}',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.bold),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
@@ -405,7 +463,13 @@ class CheckoutModal extends ConsumerWidget {
             // Botões
             ElevatedButton(
               onPressed: () async {
-                await _submitOrder(context, ref, establishment.id, cart, cartTotal);
+                await _submitOrder(
+                  context,
+                  ref,
+                  establishment.id,
+                  cart,
+                  cartTotal,
+                );
               },
               child: const Text('Confirmar Pedido'),
             ),
@@ -438,12 +502,16 @@ class CheckoutModal extends ConsumerWidget {
       await SupabaseClientService.client.from('orders').insert({
         'establishment_id': establishmentId,
         'consumer_id': user.id,
-        'items': cart.map((item) => {
-          'id': item.id,
-          'name': item.name,
-          'quantity': item.quantity,
-          'price': item.price,
-        }).toList(),
+        'items': cart
+            .map(
+              (item) => {
+                'id': item.id,
+                'name': item.name,
+                'quantity': item.quantity,
+                'price': item.price,
+              },
+            )
+            .toList(),
         'total': total,
         'status': 'pending',
         'created_at': DateTime.now().toIso8601String(),

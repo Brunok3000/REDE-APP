@@ -16,10 +16,7 @@ class SupabaseClientService {
     }
 
     try {
-      await Supabase.initialize(
-        url: endpoint,
-        anonKey: key,
-      );
+      await Supabase.initialize(url: endpoint, anonKey: key);
     } catch (e) {
       // Bubble up initialization errors so the app can react (and tests can fail fast)
       rethrow;

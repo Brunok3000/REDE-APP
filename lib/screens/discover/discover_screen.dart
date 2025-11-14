@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../services/supabase_client.dart';
 import '../../services/geo_service.dart';
 
 // Provider para eventos populares
-final popularEventsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+final popularEventsProvider = FutureProvider<List<Map<String, dynamic>>>((
+  ref,
+) async {
   final client = SupabaseClientService.client;
-  
+
   // Buscar eventos ordenados por engajamento (sold_tickets)
   final results = await client
       .from('events')
@@ -18,7 +21,9 @@ final popularEventsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) a
 });
 
 // Provider para eventos próximos
-final nearbyEventsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+final nearbyEventsProvider = FutureProvider<List<Map<String, dynamic>>>((
+  ref,
+) async {
   try {
     final location = await GeoService.getCurrentLocation();
     if (location == null) {
@@ -44,22 +49,24 @@ final nearbyEventsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) as
     final establishmentIds = nearby.map((e) => e['id'] as String).toList();
 
     final client = SupabaseClientService.client;
-    
+
     // Buscar todos os eventos desses estabelecimentos (Supabase não suporta IN diretamente)
     // Fazer múltiplas queries ou buscar todos e filtrar
-    var query = client
-        .from('events')
-        .select('*, establishments(*)');
-    
+    var query = client.from('events').select('*, establishments(*)');
+
     final allResults = await query;
-    
-    final results = (allResults as List)
-        .where((event) =>
-            establishmentIds.contains(event['establishment_id']))
-        .toList()
-      ..sort((a, b) => (a['date'] as String?)
-          ?.compareTo(b['date'] as String? ?? '') ??
-          0);
+
+    final results =
+        (allResults as List)
+            .where(
+              (event) => establishmentIds.contains(event['establishment_id']),
+            )
+            .toList()
+          ..sort(
+            (a, b) =>
+                (a['date'] as String?)?.compareTo(b['date'] as String? ?? '') ??
+                0,
+          );
 
     return List<Map<String, dynamic>>.from(results);
   } catch (e) {
@@ -76,9 +83,7 @@ class DiscoverScreen extends ConsumerWidget {
     final nearbyAsync = ref.watch(nearbyEventsProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Descobrir'),
-      ),
+      appBar: AppBar(title: const Text('Descobrir')),
       body: RefreshIndicator(
         onRefresh: () async {
           ref.invalidate(popularEventsProvider);
@@ -119,9 +124,8 @@ class DiscoverScreen extends ConsumerWidget {
               nearbyAsync.when(
                 data: (events) => _buildEventsList(events),
                 loading: () => const Center(child: CircularProgressIndicator()),
-                error: (err, stack) => const Center(
-                  child: Text('Erro ao carregar eventos'),
-                ),
+                error: (err, stack) =>
+                    const Center(child: Text('Erro ao carregar eventos')),
               ),
             ],
           ),
@@ -146,58 +150,69 @@ class DiscoverScreen extends ConsumerWidget {
         itemCount: events.length,
         itemBuilder: (context, index) {
           final event = events[index];
-          final establishment = event['establishments'] as Map<String, dynamic>?;
-          
-          return Container(
-            width: 300,
-            margin: const EdgeInsets.only(right: 16),
-            child: Card(
-              clipBehavior: Clip.antiAlias,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Container(
-                      color: Colors.blue[100],
-                      child: Center(
-                        child: Text(
-                          event['name'] ?? 'Evento',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+          final establishment =
+              event['establishments'] as Map<String, dynamic>?;
+          final establishmentId = establishment?['id'] as String?;
+
+          return GestureDetector(
+            onTap: () {
+              if (establishmentId != null) {
+                // Reconstruct establishment object
+                final est = establishment!;
+                context.push('/establishment/$establishmentId', extra: est);
+              }
+            },
+            child: Container(
+              width: 300,
+              margin: const EdgeInsets.only(right: 16),
+              child: Card(
+                clipBehavior: Clip.antiAlias,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Container(
+                        color: Colors.blue[100],
+                        child: Center(
+                          child: Text(
+                            event['name'] ?? 'Evento',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (establishment != null)
-                          Text(
-                            establishment['name'] ?? '',
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                        if (event['date'] != null)
-                          Text(
-                            'Data: ${event['date']}',
-                            style: const TextStyle(fontSize: 12),
-                          ),
-                        if (event['price'] != null)
-                          Text(
-                            'R\$ ${event['price']}',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.green,
+                    Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (establishment != null)
+                            Text(
+                              establishment['name'] ?? '',
+                              style: const TextStyle(fontWeight: FontWeight.bold),
                             ),
-                          ),
-                      ],
+                          if (event['date'] != null)
+                            Text(
+                              'Data: ${event['date']}',
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                          if (event['price'] != null)
+                            Text(
+                              'R\$ ${event['price']}',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.green,
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           );
@@ -221,7 +236,7 @@ class DiscoverScreen extends ConsumerWidget {
       itemBuilder: (context, index) {
         final event = events[index];
         final establishment = event['establishments'] as Map<String, dynamic>?;
-        
+
         return Card(
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: ListTile(
@@ -230,10 +245,8 @@ class DiscoverScreen extends ConsumerWidget {
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (establishment != null)
-                  Text(establishment['name'] ?? ''),
-                if (event['date'] != null)
-                  Text('Data: ${event['date']}'),
+                if (establishment != null) Text(establishment['name'] ?? ''),
+                if (event['date'] != null) Text('Data: ${event['date']}'),
               ],
             ),
             trailing: event['price'] != null

@@ -34,8 +34,9 @@ final partnerOrdersProvider = FutureProvider<List<OrderModel>>((ref) async {
 
   if (establishments.isEmpty) return [];
 
-  final establishmentIds =
-      (establishments as List).map((e) => e['id'] as String).toList();
+  final establishmentIds = (establishments as List)
+      .map((e) => e['id'] as String)
+      .toList();
 
   final results = await client
       .from('orders')
@@ -44,13 +45,10 @@ final partnerOrdersProvider = FutureProvider<List<OrderModel>>((ref) async {
 
   // Filtrar localmente por establishment_id
   final ordersForEstablishments = (results as List)
-      .where((order) =>
-          establishmentIds.contains(order['establishment_id']))
+      .where((order) => establishmentIds.contains(order['establishment_id']))
       .toList();
 
-  return ordersForEstablishments
-      .map((o) => OrderModel.fromJson(o))
-      .toList();
+  return ordersForEstablishments.map((o) => OrderModel.fromJson(o)).toList();
 });
 
 class OrdersScreen extends ConsumerWidget {
@@ -232,19 +230,11 @@ class OrderCard extends ConsumerWidget {
                 children: [
                   IconButton(
                     icon: const Icon(Icons.check, color: Colors.green),
-                    onPressed: () => _updateStatus(
-                      ref,
-                      order.id,
-                      'accepted',
-                    ),
+                    onPressed: () => _updateStatus(ref, order.id, 'accepted'),
                   ),
                   IconButton(
                     icon: const Icon(Icons.close, color: Colors.red),
-                    onPressed: () => _updateStatus(
-                      ref,
-                      order.id,
-                      'rejected',
-                    ),
+                    onPressed: () => _updateStatus(ref, order.id, 'rejected'),
                   ),
                 ],
               )
