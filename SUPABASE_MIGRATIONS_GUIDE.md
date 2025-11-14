@@ -16,7 +16,7 @@ Todas as migrations foram revisadas e validadas ✅
 ### Opção 1: Via Dashboard Supabase (Recomendado para Primeira Vez)
 
 1. **Abra o SQL Editor do Supabase:**
-   - Link: https://app.supabase.com/project/chyhjtbgzwwdckhptnja/sql/new
+   - Link: [Supabase SQL Editor](https://app.supabase.com/project/chyhjtbgzwwdckhptnja/sql/new)
 
 2. **Para a Migration 1 (Schema Completo):**
    - Abra o arquivo: `supabase/migrations/20251115000002_complete_schema.sql`
@@ -53,11 +53,12 @@ supabase db list --schema public
 
 ### Opção 3: Via GitHub Actions (Auto-Deploy - Em Produção)
 
-O repositório tem um workflow GitHub Actions configurado para deploying Edge Functions automaticamente. 
+O repositório tem um workflow GitHub Actions configurado para deploying Edge Functions automaticamente.
 
 **Trigger:** Quando você faz push para `master` com mudanças em `supabase/functions/`.
 
 Para rodar manualmente:
+
 - Vá para: GitHub → Actions → "Deploy Supabase Function"
 - Clique "Run workflow" → Branch: `master`
 
@@ -75,7 +76,8 @@ No SQL Editor do Supabase, execute:
 SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename;
 ```
 
-Resultado esperado (10 tabelas):
+- Resultado esperado (10 tabelas):
+
 - `establishments`
 - `events`
 - `indications`
@@ -95,6 +97,7 @@ SELECT tablename, policyname FROM pg_policies WHERE schemaname = 'public' ORDER 
 ```
 
 Cada tabela deve ter pelo menos 1 policy. Exemplos:
+
 - `profiles`: 3 policies (read own, insert self, update own)
 - `orders`: 4 policies (consumer read/write, partner read/update)
 - `posts`: 3 policies (public read, author write, author update)
@@ -109,6 +112,7 @@ AND event_object_table = 'orders';
 ```
 
 Resultado esperado:
+
 - Trigger: `trg_orders_enqueue_notification`
 
 ### 4. Índices de Performance
@@ -118,6 +122,7 @@ SELECT indexname FROM pg_indexes WHERE schemaname = 'public' ORDER BY indexname;
 ```
 
 Deve incluir (mínimo):
+
 - `idx_establishments_location`
 - `idx_establishments_owner`
 - `idx_orders_consumer`
@@ -178,7 +183,8 @@ Retorna: todos os estabelecimentos dentro de 5 km, com `distance_meters` calcula
 
 **Causa:** Tentou rodar migration 2 (outbox) sem ter rodado migration 1 primeiro.
 
-**Solução:** 
+**Solução:**
+
 1. Execute migration 1 (schema completo) ANTES de migration 2
 2. Valide que `orders` tabela existe com query acima
 
@@ -187,6 +193,7 @@ Retorna: todos os estabelecimentos dentro de 5 km, com `distance_meters` calcula
 **Causa:** RLS está bloqueando sua conta/role.
 
 **Solução:**
+
 1. Use `SECURITY DEFINER` em functions (já configurado)
 2. Ou desabilite RLS temporariamente (⚠️ apenas para testes)
 
@@ -201,6 +208,7 @@ ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 **Causa:** Extension não foi criada.
 
 **Solução:** Execute manualmente:
+
 ```sql
 CREATE EXTENSION IF NOT EXISTS postgis;
 ```
@@ -218,6 +226,7 @@ Após aplicar as migrations, opcionalmente seed com dados de teste:
 ```
 
 Isso populará:
+
 - 3 usuários de teste (consumer + partner)
 - 5 estabelecimentos
 - 10 menu items
@@ -226,7 +235,7 @@ Isso populará:
 
 ---
 
-## ✨ Pronto!
+## ✨ Pronto
 
 Suas migrations estão prontas para produção. Agora você pode:
 

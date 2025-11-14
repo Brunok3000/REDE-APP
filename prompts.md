@@ -23,5 +23,6 @@ Abaixo estão os 14 prompts enviados para gerar funcionalidades, cada um com o q
 ---
 
 Observações:
+
 - Criei este arquivo na raiz do repositório `prompts.md` e irei commitar para garantir que fique persistente no controle de versão.
 - Se quiser, posso também criar uma cópia em `.github/` como backup para reduzir chance de exclusão acidental.
