@@ -218,10 +218,7 @@ class _DeliveryTab extends ConsumerWidget {
           itemCount: items.length,
           itemBuilder: (context, index) {
             final item = items[index];
-            return _MenuItem(
-              item: item,
-              establishmentId: establishmentId,
-            );
+            return _MenuItem(item: item, establishmentId: establishmentId);
           },
         );
       },
@@ -232,7 +229,8 @@ class _DeliveryTab extends ConsumerWidget {
           children: [
             Text('Erro: $err'),
             ElevatedButton(
-              onPressed: () => ref.invalidate(menuItemsProvider(establishmentId)),
+              onPressed: () =>
+                  ref.invalidate(menuItemsProvider(establishmentId)),
               child: const Text('Tentar novamente'),
             ),
           ],
@@ -499,23 +497,28 @@ class CheckoutModal extends ConsumerWidget {
       }
 
       // Criar pedido no Supabase
-      await SupabaseClientService.client.from('orders').insert({
-        'establishment_id': establishmentId,
-        'consumer_id': user.id,
-        'items': cart
-            .map(
-              (item) => {
-                'id': item.id,
-                'name': item.name,
-                'quantity': item.quantity,
-                'price': item.price,
-              },
-            )
-            .toList(),
-        'total': total,
-        'status': 'pending',
-        'created_at': DateTime.now().toIso8601String(),
-      });
+      // Inserir pedido e obter o registro criado
+      final insertResp = await SupabaseClientService.client
+          .from('orders')
+          .insert({
+            'establishment_id': establishmentId,
+            'consumer_id': user.id,
+            'items': cart
+                .map(
+                  (item) => {
+                    'id': item.id,
+                    'name': item.name,
+                    'quantity': item.quantity,
+                    'price': item.price,
+                  },
+                )
+                .toList(),
+            'total': total,
+            'status': 'pending',
+            'created_at': DateTime.now().toIso8601String(),
+          })
+          .select()
+          .maybeSingle();
 
       // Limpar carrinho
       ref.read(cartProvider.notifier).clear();
@@ -523,6 +526,22 @@ class CheckoutModal extends ConsumerWidget {
       if (context.mounted) {
         Navigator.pop(context);
         Fluttertoast.showToast(msg: 'Pedido realizado com sucesso!');
+      }
+
+      // Tentar notificar servidor para envio de push (Edge Function)
+      try {
+        if (insertResp != null) {
+          await SupabaseClientService.notifyNewOrder(insertResp);
+        } else {
+          // fallback: enviar payload mínimo
+          await SupabaseClientService.notifyNewOrder({
+            'establishment_id': establishmentId,
+            'consumer_id': user.id,
+            'total': total,
+          });
+        }
+      } catch (_) {
+        // não bloquear a UX se a notificação falhar
       }
     } catch (e) {
       Fluttertoast.showToast(msg: 'Erro ao criar pedido: $e');

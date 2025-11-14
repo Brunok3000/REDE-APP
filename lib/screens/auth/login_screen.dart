@@ -18,9 +18,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     final auth = ref.watch(authProvider);
     ref.listen(authProvider, (prev, next) {
-      next.whenOrNull(
-        error: (e, _) => Fluttertoast.showToast(msg: e.toString()),
-      );
+      // Navegar para trás quando o auth tiver um usuário válido (login bem-sucedido)
+      try {
+        next.when(
+          data: (s) {
+            final prevUserId = prev?.value?.userId;
+            final newUserId = s.userId;
+            if (newUserId != null && newUserId != prevUserId) {
+              if (mounted) Navigator.of(context).pop();
+            }
+          },
+          loading: () {},
+          error: (e, st) {
+            Fluttertoast.showToast(msg: e.toString());
+          },
+        );
+      } catch (_) {
+        // ignore
+      }
     });
     return Scaffold(
       appBar: AppBar(title: const Text('Login')),
@@ -45,15 +60,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       final notifier = ref.read(authProvider.notifier);
                       try {
                         await notifier.loginEmail(_email.text, _password.text);
-                        // only navigate away if login produced a user id
-                        final current = ref.read(authProvider);
-                        final hasUser = current.maybeWhen(
-                          data: (s) => s.userId != null,
-                          orElse: () => false,
-                        );
-                        if (hasUser && mounted) {
-                          Navigator.of(context).pop();
-                        }
+
+                        // Após o login, o listener acima (ref.listen) irá
+                        // detectar a mudança de estado e cuidar da navegação.
                       } catch (e) {
                         Fluttertoast.showToast(
                           msg: 'Erro ao entrar: ${e.toString()}',

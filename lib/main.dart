@@ -7,17 +7,22 @@ import 'screens/search/search_screen.dart';
 import 'screens/discover/discover_screen.dart';
 import 'screens/orders/orders_screen.dart';
 import 'screens/settings/settings_screen.dart';
+import 'screens/partner/pos_dashboard_screen.dart';
 import 'widgets/bottom_nav/bottom_nav.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'screens/discover/establishment_profile_screen.dart';
 import 'models/establishment.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SupabaseClientService.init();
+  // Inicializar Hive para POS offline/cache
+  await Hive.initFlutter();
+  await Hive.openBox('kds_orders');
   // Initialize Firebase for push notifications (FCM)
   try {
     await Firebase.initializeApp();
@@ -108,6 +113,10 @@ GoRouter _buildRouter() {
           GoRoute(
             path: '/orders',
             builder: (context, state) => const OrdersScreen(),
+          ),
+          GoRoute(
+            path: '/pos',
+            builder: (context, state) => const POSDashboardScreen(),
           ),
           GoRoute(
             path: '/settings',

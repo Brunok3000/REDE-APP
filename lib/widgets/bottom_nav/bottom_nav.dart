@@ -23,16 +23,31 @@ class _BottomNavState extends ConsumerState<BottomNav> {
     // Destinos diferentes baseado no role
     final destinations = isPartner
         ? const [
-            NavigationDestination(icon: Icon(Icons.dashboard), label: 'Dashboard'),
-            NavigationDestination(icon: Icon(Icons.receipt_long), label: 'Pedidos'),
-            NavigationDestination(icon: Icon(Icons.analytics), label: 'Relatórios'),
+            NavigationDestination(
+              icon: Icon(Icons.dashboard),
+              label: 'Dashboard',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.point_of_sale),
+              label: 'POS',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.receipt_long),
+              label: 'Pedidos',
+            ),
             NavigationDestination(icon: Icon(Icons.settings), label: 'Config'),
           ]
         : const [
             NavigationDestination(icon: Icon(Icons.home), label: 'Home'),
             NavigationDestination(icon: Icon(Icons.search), label: 'Buscar'),
-            NavigationDestination(icon: Icon(Icons.explore), label: 'Descobrir'),
-            NavigationDestination(icon: Icon(Icons.receipt_long), label: 'Pedidos'),
+            NavigationDestination(
+              icon: Icon(Icons.explore),
+              label: 'Descobrir',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.receipt_long),
+              label: 'Pedidos',
+            ),
             NavigationDestination(icon: Icon(Icons.settings), label: 'Config'),
           ];
 
@@ -50,10 +65,10 @@ class _BottomNavState extends ConsumerState<BottomNav> {
                 context.go('/');
                 break;
               case 1:
-                context.go('/orders');
+                context.go('/pos');
                 break;
               case 2:
-                context.go('/orders'); // Relatórios (mesma tela por enquanto)
+                context.go('/orders');
                 break;
               case 3:
                 context.go('/settings');

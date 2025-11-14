@@ -1,0 +1,68 @@
+name: Deploy Supabase Edge Function
+
+on:
+  workflow_dispatch: {}
+  push:
+    paths:
+      - 'supabase/functions/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install supabase CLI
+        run: |
+          echo "Installing supabase CLI..."
+          curl -L -o supabase.tar.gz "https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz"
+          tar xzf supabase.tar.gz
+          sudo mv supabase /usr/local/bin/supabase || sudo mv supabase /usr/local/bin/
+          supabase --version || true
+
+      - name: Login to Supabase CLI
+        env:
+          SUPABASE_TOKEN: ${{ secrets.SUPABASE_TOKEN }}
+        run: |
+          if [ -z "$SUPABASE_TOKEN" ]; then echo "No SUPABASE_TOKEN secret set"; exit 1; fi
+          echo "Logging to supabase CLI"
+          supabase login --token "$SUPABASE_TOKEN"
+
+      - name: Set Supabase project secrets (env for functions)
+        env:
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          FCM_SERVER_KEY: ${{ secrets.FCM_SERVER_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        run: |
+          echo "Setting Supabase project secrets (if provided)"
+          # set each secret only if provided
+          if [ -n "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+            supabase secrets set SUPABASE_SERVICE_ROLE_KEY="$SUPABASE_SERVICE_ROLE_KEY"
+          else
+            echo "SUPABASE_SERVICE_ROLE_KEY not provided; skipping"
+          fi
+          if [ -n "$FCM_SERVER_KEY" ]; then
+            supabase secrets set FCM_SERVER_KEY="$FCM_SERVER_KEY"
+          else
+            echo "FCM_SERVER_KEY not provided; skipping"
+          fi
+          if [ -n "$SUPABASE_URL" ]; then
+            supabase secrets set SUPABASE_URL="$SUPABASE_URL"
+          else
+            echo "SUPABASE_URL not provided; skipping"
+          fi
+
+      - name: Deploy Edge Function
+        env:
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: |
+          if [ -z "$SUPABASE_PROJECT_REF" ]; then echo "No SUPABASE_PROJECT_REF secret set"; exit 1; fi
+          cd supabase/functions/new_order_notification || (echo 'function folder not found' && exit 1)
+          supabase functions deploy new_order_notification --project-ref "$SUPABASE_PROJECT_REF" --no-verify
+
+      - name: Done
+        run: echo "Deploy step finished. Check logs above for details."

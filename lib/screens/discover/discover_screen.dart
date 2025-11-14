@@ -192,7 +192,9 @@ class DiscoverScreen extends ConsumerWidget {
                           if (establishment != null)
                             Text(
                               establishment['name'] ?? '',
-                              style: const TextStyle(fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           if (event['date'] != null)
                             Text(
