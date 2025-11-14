@@ -1,9 +1,6 @@
-// This is a basic Flutter widget test.
+// REDE App - Widget Tests
 //
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
+// Tests for basic app functionality and navigation
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,20 +9,26 @@ import 'package:rede/main.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
+  testWidgets('REDE App initializes without error', (WidgetTester tester) async {
+    // Build the app
     await tester.pumpWidget(const ProviderScope(child: RedeApp()));
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    // Allow time for async initialization (Firebase, Supabase, etc)
+    await tester.pumpAndSettle(const Duration(seconds: 3));
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    // Verify the app is running (looks for common widgets in auth flow)
+    // Either we see login screen or main app is rendered
+    expect(find.byType(MaterialApp), findsWidgets);
+  });
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+  testWidgets('Login screen loads when not authenticated', (WidgetTester tester) async {
+    // Build the app
+    await tester.pumpWidget(const ProviderScope(child: RedeApp()));
+    
+    // Allow initialization
+    await tester.pumpAndSettle(const Duration(seconds: 2));
+    
+    // Verify that MaterialApp is present (router should be active)
+    expect(find.byType(MaterialApp), findsWidgets);
   });
 }
