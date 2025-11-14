@@ -19,36 +19,64 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   Widget build(BuildContext context) {
     final auth = ref.watch(authProvider);
     ref.listen(authProvider, (prev, next) {
-      next.whenOrNull(error: (e, _) => Fluttertoast.showToast(msg: e.toString()));
+      next.whenOrNull(
+        error: (e, _) => Fluttertoast.showToast(msg: e.toString()),
+      );
     });
     return Scaffold(
       appBar: AppBar(title: const Text('Registrar')),
       body: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(children: [
-          TextField(controller: _email, decoration: const InputDecoration(labelText: 'Email')),
-          TextField(controller: _password, decoration: const InputDecoration(labelText: 'Senha'), obscureText: true),
-          const SizedBox(height: 16),
-          DropdownButton<String>(
-            value: _role,
-            items: const [
-              DropdownMenuItem(value: 'consumer', child: Text('Consumidor')),
-              DropdownMenuItem(value: 'partner', child: Text('Parceiro')),
-            ],
-            onChanged: (v) => setState(() => _role = v ?? 'consumer'),
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: auth.isLoading
-                ? null
-                : () async {
-                    final navigator = Navigator.of(context);
-                    await ref.read(authProvider.notifier).register(_email.text, _password.text, _role);
-                    navigator.pop();
-                  },
-            child: const Text('Criar conta'),
-          ),
-        ]),
+        child: Column(
+          children: [
+            TextField(
+              controller: _email,
+              decoration: const InputDecoration(labelText: 'Email'),
+            ),
+            TextField(
+              controller: _password,
+              decoration: const InputDecoration(labelText: 'Senha'),
+              obscureText: true,
+            ),
+            const SizedBox(height: 16),
+            DropdownButton<String>(
+              value: _role,
+              items: const [
+                DropdownMenuItem(value: 'consumer', child: Text('Consumidor')),
+                DropdownMenuItem(value: 'partner', child: Text('Parceiro')),
+              ],
+              onChanged: (v) => setState(() => _role = v ?? 'consumer'),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: auth.isLoading
+                  ? null
+                  : () async {
+                      // Validate inputs
+                      final email = _email.text.trim();
+                      final password = _password.text;
+
+                      if (email.isEmpty || !email.contains('@')) {
+                        Fluttertoast.showToast(msg: 'Email inválido');
+                        return;
+                      }
+                      if (password.isEmpty || password.length < 6) {
+                        Fluttertoast.showToast(
+                          msg: 'Senha deve ter no mínimo 6 caracteres',
+                        );
+                        return;
+                      }
+
+                      final navigator = Navigator.of(context);
+                      await ref
+                          .read(authProvider.notifier)
+                          .register(email, password, _role);
+                      navigator.pop();
+                    },
+              child: const Text('Criar conta'),
+            ),
+          ],
+        ),
       ),
     );
   }

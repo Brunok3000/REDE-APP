@@ -57,9 +57,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               onPressed: auth.isLoading
                   ? null
                   : () async {
+                      // Validate email and password
+                      final email = _email.text.trim();
+                      final password = _password.text;
+
+                      if (email.isEmpty || !email.contains('@')) {
+                        Fluttertoast.showToast(msg: 'Email inválido');
+                        return;
+                      }
+                      if (password.isEmpty || password.length < 6) {
+                        Fluttertoast.showToast(
+                          msg: 'Senha deve ter no mínimo 6 caracteres',
+                        );
+                        return;
+                      }
+
                       final notifier = ref.read(authProvider.notifier);
                       try {
-                        await notifier.loginEmail(_email.text, _password.text);
+                        await notifier.loginEmail(email, password);
 
                         // Após o login, o listener acima (ref.listen) irá
                         // detectar a mudança de estado e cuidar da navegação.
