@@ -1,0 +1,55 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Secrets and sensitive data
+*.key
+*.pem
+**/secrets.json
+**/.env.production
+
+# IDE
+.vscode/
+.idea/
+*.iml
+*.swp
+*.swo
+*~
+
+# Build artifacts
+build/
+dist/
+.dart_tool/
+.flutter-plugins
+.packages
+
+# Supabase local
+supabase/.branches/
+supabase/migrations/*/rollback.sql
+.supabase/config.toml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Flutter
+rede/build/
+rede/.dart_tool/
+rede/.packages
+rede/pubspec.lock
+rede/windows/flutter/ephemeral/
+
+# Credentials (NEVER commit these!)
+postgres_password
+db_connection_string
+service_role_key
+anon_key
+fcm_key
+upload-supabase.ps1

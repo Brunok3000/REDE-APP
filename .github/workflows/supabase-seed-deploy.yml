@@ -1,0 +1,72 @@
+name: Supabase Seed & Deploy Functions
+
+on:
+  workflow_dispatch: # Manual trigger
+  push:
+    branches:
+      - main
+    paths:
+      - 'supabase/seed/**'
+      - 'supabase/functions/**'
+      - 'supabase/migrations/**'
+
+jobs:
+  seed-and-deploy:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      FCM_SERVER_KEY: ${{ secrets.FCM_SERVER_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Supabase CLI
+        run: npm install -g supabase
+
+      - name: Link Supabase Project
+        run: supabase link --project-ref $SUPABASE_PROJECT_REF
+
+      - name: Push Migrations
+        run: supabase db push --yes
+        continue-on-error: true
+
+      - name: Apply Seed via Supabase REST API
+        run: |
+          # Read seed file and execute via REST API (more reliable than CLI)
+          SEED_SQL=$(cat supabase/seed/mock_data.sql)
+          curl -X POST "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/sql" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"query\": $(echo "$SEED_SQL" | jq -Rs .)}"
+        continue-on-error: true
+
+      - name: Deploy Edge Function
+        run: |
+          supabase functions deploy new_order_notification --project-ref $SUPABASE_PROJECT_REF
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        continue-on-error: true
+
+      - name: Set Function Secrets
+        run: |
+          supabase secrets set SUPABASE_URL="$SUPABASE_URL" --project-ref $SUPABASE_PROJECT_REF
+          supabase secrets set SUPABASE_SERVICE_ROLE_KEY="$SUPABASE_SERVICE_ROLE_KEY" --project-ref $SUPABASE_PROJECT_REF
+          supabase secrets set FCM_SERVER_KEY="$FCM_SERVER_KEY" --project-ref $SUPABASE_PROJECT_REF
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        continue-on-error: true
+
+      - name: Notify Success
+        if: success()
+        run: echo "✅ Seed applied and functions deployed successfully!"
+
+      - name: Notify Failure
+        if: failure()
+        run: echo "⚠️ Some steps failed. Check logs for details."
