@@ -1,0 +1,21 @@
+import 'user_repository_mock.dart';
+import 'partner_repository_mock.dart';
+import 'reservation_repository_mock.dart';
+import 'order_repository_mock.dart';
+import 'cart_repository_mock.dart';
+import 'profile_visit_repository_mock.dart';
+import 'notification_repository_mock.dart';
+import 'room_repository_mock.dart';
+import 'menu_repository_mock.dart';
+import 'post_repository_mock.dart';
+
+final userRepositoryMock = UserRepositoryMock();
+final partnerRepositoryMock = PartnerRepositoryMock();
+final reservationRepositoryMock = ReservationRepositoryMock();
+final orderRepositoryMock = OrderRepositoryMock();
+final cartRepositoryMock = CartRepositoryMock();
+final profileVisitRepositoryMock = ProfileVisitRepositoryMock();
+final notificationRepositoryMock = NotificationRepositoryMock();
+final roomRepositoryMock = RoomRepositoryMock();
+final menuRepositoryMock = MenuRepositoryMock();
+final postRepositoryMock = PostRepositoryMock();
