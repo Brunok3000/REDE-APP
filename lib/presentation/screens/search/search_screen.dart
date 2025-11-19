@@ -318,36 +318,71 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     required String image,
     required bool isOpen,
   }) {
+    // Card redesenhado: imagem com gradiente + conteúdo legível sobre o card branco
     return GestureDetector(
       onTap: () {
-        // TODO: Navegar para detalhes do estabelecimento
+        // Navegar para detalhes do estabelecimento (se houver rota)
       },
       child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
           color: AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.border),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+                BoxShadow(
+              color: Colors.black.withAlpha((0.04 * 255).round()),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image
+            // Imagem de topo com gradiente para legibilidade
             Container(
+              height: 140,
               width: double.infinity,
-              height: 160,
-              decoration: BoxDecoration(gradient: AppColors.purpleGradient),
-              child: Center(
-                child: Text(image, style: const TextStyle(fontSize: 60)),
+              decoration: BoxDecoration(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                gradient: AppColors.purpleGradient,
+              ),
+              child: Stack(
+                children: [
+                  // Emoji ou imagem centralizada
+                  Center(child: Text(image, style: const TextStyle(fontSize: 52))),
+                  // Distância no canto superior direito
+                  Positioned(
+                    right: 12,
+                    top: 12,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withAlpha((0.45 * 255).round()),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.location_on, color: Colors.white, size: 14),
+                          const SizedBox(width: 6),
+                          Text(
+                            distance,
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                ],
               ),
             ),
-            // Content
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
                         child: Column(
@@ -355,119 +390,50 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                           children: [
                             Text(
                               name,
-                              style: Theme.of(
-                                context,
-                              ).textTheme.titleMedium?.copyWith(
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w700,
                                 color: AppColors.textPrimary,
-                                fontWeight: FontWeight.w600,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              category,
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(color: AppColors.textSecondary),
+                            const SizedBox(height: 6),
+                            Row(
+                              children: [
+                                Text(category, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary)),
+                                const SizedBox(width: 8),
+                                _buildTag('OPEN', isOpen ? Colors.green.shade50 : Colors.red.shade50, isOpen ? Colors.green : Colors.red),
+                              ],
                             ),
                           ],
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color:
-                              isOpen
-                                  ? AppColors.successLight
-                                  : AppColors.errorLight,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          isOpen ? 'Aberto' : 'Fechado',
-                          style: Theme.of(
-                            context,
-                          ).textTheme.labelSmall?.copyWith(
-                            color: isOpen ? AppColors.success : AppColors.error,
-                            fontWeight: FontWeight.w600,
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.star, color: AppColors.warning, size: 16),
+                              const SizedBox(width: 6),
+                              Text(rating.toString(), style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
+                            ],
                           ),
-                        ),
-                      ),
+                          const SizedBox(height: 8),
+                          Text('$reviews avaliações', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary)),
+                        ],
+                      )
                     ],
                   ),
                   const SizedBox(height: 12),
-                  // Rating and Distance
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(Icons.star, color: AppColors.warning, size: 18),
-                          const SizedBox(width: 4),
-                          Text(
-                            rating.toString(),
-                            style: Theme.of(
-                              context,
-                            ).textTheme.titleMedium?.copyWith(
-                              color: AppColors.textPrimary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '($reviews avaliações)',
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: AppColors.textSecondary),
-                          ),
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.location_on_outlined,
-                            size: 16,
-                            color: AppColors.primary,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            distance,
-                            style: Theme.of(
-                              context,
-                            ).textTheme.bodySmall?.copyWith(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  // Action Button
                   SizedBox(
                     width: double.infinity,
-                    height: 40,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        // TODO: Fazer reserva/pedir
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
+                    child: OutlinedButton(
+                      onPressed: () {},
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      child: Text(
-                        'Ver Detalhes',
-                        style: Theme.of(
-                          context,
-                        ).textTheme.labelMedium?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                      child: Text('Ver Detalhes', style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w700)),
                     ),
                   ),
                 ],
@@ -476,6 +442,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildTag(String text, Color bg, Color fg) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(6)),
+      child: Text(text, style: TextStyle(color: fg, fontSize: 11, fontWeight: FontWeight.w700)),
     );
   }
 }

@@ -191,44 +191,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         },
         child: const Icon(Icons.add, color: Colors.white),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: AppColors.surface,
-        selectedItemColor: AppColors.primary,
-        unselectedItemColor: AppColors.textTertiary,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: 'Home',
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          border: Border(top: BorderSide(color: AppColors.border)),
+        ),
+        child: SafeArea(
+          child: NavigationBar(
+            selectedIndex: _selectedIndex,
+            onDestinationSelected: (index) => setState(() => _selectedIndex = index),
+            destinations: const [
+              NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
+              NavigationDestination(icon: Icon(Icons.search_outlined), selectedIcon: Icon(Icons.search), label: 'Busca'),
+              NavigationDestination(icon: Icon(Icons.favorite_outline), selectedIcon: Icon(Icons.favorite), label: 'Reservas'),
+              NavigationDestination(icon: Icon(Icons.shopping_bag_outlined), selectedIcon: Icon(Icons.shopping_bag), label: 'Pedidos'),
+              NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Perfil'),
+            ],
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.search_outlined),
-            activeIcon: Icon(Icons.search),
-            label: 'Busca',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.favorite_outline),
-            activeIcon: Icon(Icons.favorite),
-            label: 'Reservas',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_bag_outlined),
-            activeIcon: Icon(Icons.shopping_bag),
-            label: 'Pedidos',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
-            label: 'Perfil',
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -269,86 +249,64 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildPostCardFromModel(BuildContext context, Post post) {
+    // Card estilo rede social: branco sobre fundo cinza, ações com espaçamento e ícones maiores
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
+  boxShadow: [BoxShadow(color: Colors.black.withAlpha((0.02 * 255).round()), blurRadius: 6)],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // User Info
+          // Header
           Row(
             children: [
               Container(
-                width: 44,
-                height: 44,
+                width: 48,
+                height: 48,
                 decoration: BoxDecoration(
                   gradient: AppColors.purpleGradient,
-                  borderRadius: BorderRadius.circular(22),
+                  borderRadius: BorderRadius.circular(24),
                 ),
-                child: Center(
-                  child: Text(
-                    post.authorAvatar ?? '👤',
-                    style: const TextStyle(fontSize: 24),
-                  ),
-                ),
+                child: Center(child: Text(post.authorAvatar ?? '👤', style: const TextStyle(fontSize: 22))),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      post.authorName,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    Text(
-                      _niceTimestamp(post.createdAt),
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textTertiary,
-                      ),
-                    ),
+                    Text(post.authorName, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 2),
+                    Text(_niceTimestamp(post.createdAt), style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textTertiary)),
                   ],
                 ),
               ),
-              IconButton(
-                icon: const Icon(Icons.more_vert),
-                color: AppColors.textTertiary,
-                onPressed: () {},
-              ),
+              IconButton(onPressed: () {}, icon: const Icon(Icons.more_horiz), color: AppColors.textTertiary),
             ],
           ),
+          const SizedBox(height: 10),
+          // Conteúdo do post
+          Text(post.content, style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: AppColors.textPrimary)),
+          if (postHasImagePlaceholder(post)) ...[
+            const SizedBox(height: 10),
+            Container(
+              height: 180,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade200,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Center(child: Text('Imagem do post', style: Theme.of(context).textTheme.bodyMedium)),
+            ),
+          ],
           const SizedBox(height: 12),
-          // Content
-          Text(
-            post.content,
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: AppColors.textPrimary),
-          ),
-          const SizedBox(height: 16),
-          // Actions
+          // Actions row
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
-                child: _buildActionButton(
-                  icon:
-                      (_currentUser != null &&
-                              post.likedBy.contains(_currentUser!.id))
-                          ? Icons.favorite
-                          : Icons.favorite_outline,
-                  label: post.likes.toString(),
-                  color:
-                      (_currentUser != null &&
-                              post.likedBy.contains(_currentUser!.id))
-                          ? AppColors.error
-                          : AppColors.textSecondary,
+                child: GestureDetector(
                   onTap: () async {
                     final user = await userRepositoryMock.getCurrentUser();
                     if (user != null) {
@@ -360,24 +318,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       setState(() {});
                     }
                   },
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        (_currentUser != null && post.likedBy.contains(_currentUser!.id)) ? Icons.favorite : Icons.favorite_border,
+                        color: (_currentUser != null && post.likedBy.contains(_currentUser!.id)) ? AppColors.error : AppColors.textSecondary,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(post.likes.toString(), style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary)),
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(width: 12),
               Expanded(
-                child: _buildActionButton(
-                  icon: Icons.chat_bubble_outline,
-                  label: post.commentsCount.toString(),
-                  color: AppColors.primary,
+                child: GestureDetector(
                   onTap: () {},
+                  child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.chat_bubble_outline, color: AppColors.primary), const SizedBox(width: 8), Text(post.commentsCount.toString(), style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.primary))]),
                 ),
               ),
-              const SizedBox(width: 12),
               Expanded(
-                child: _buildActionButton(
-                  icon: Icons.share_outlined,
-                  label: 'Compartilhar',
-                  color: AppColors.textSecondary,
+                child: GestureDetector(
                   onTap: () {},
+                  child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.share_outlined, color: AppColors.textSecondary), const SizedBox(width: 8), Text('Compartilhar', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary))]),
                 ),
               ),
             ],
@@ -387,34 +350,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
+  bool postHasImagePlaceholder(Post p) {
+    // placeholder: futuramente checar p.images != null
+    return false;
+  }
+
   String _niceTimestamp(DateTime dt) {
     final diff = DateTime.now().difference(dt);
     if (diff.inMinutes < 60) return 'há ${diff.inMinutes}m';
     if (diff.inHours < 24) return 'há ${diff.inHours}h';
     return 'há ${diff.inDays}d';
-  }
-
-  Widget _buildActionButton({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 18, color: color),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: Theme.of(
-              context,
-            ).textTheme.labelSmall?.copyWith(color: color),
-          ),
-        ],
-      ),
-    );
   }
 }
